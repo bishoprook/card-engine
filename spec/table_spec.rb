@@ -7,12 +7,12 @@ RSpec.describe Table do
     @anuril = Player.new("Anuril", Position.new(0, 3))
     @betlind = Player.new("Betlind", Position.new(1, 3))
     @cryle = Player.new("Cryle", Position.new(2, 3))
-    @table = Table.new(@anuril, @betlind, @cryle)
+    @table = Table.new([@anuril, @betlind, @cryle])
   end
 
   context "#next_from" do
     it "gets next from badge" do
-      @table.give_badge(:dealer, @anuril)
+      @table.give_badge!(:dealer, @anuril)
       expect(@table.next_from(:dealer)).to be @betlind
     end
   
@@ -35,7 +35,7 @@ RSpec.describe Table do
 
   context "#previous_from" do
     it "gets previous from badge" do
-      @table.give_badge(:dealer, @anuril)
+      @table.give_badge!(:dealer, @anuril)
       expect(@table.previous_from(:dealer)).to be @cryle
     end
   
@@ -57,14 +57,14 @@ RSpec.describe Table do
   end
 
   it "stores and retrieves a badge position" do
-    @table.give_badge(:dealer, @anuril)
+    @table.give_badge!(:dealer, @anuril)
     expect(@table.player(:dealer)).to be @anuril
   end
 
   it "retrieves multiple badges" do
-    @table.give_badge(:dealer, @anuril)
-    @table.give_badge(:small_blind, @betlind)
-    @table.give_badge(:big_blind, @cryle)
+    @table.give_badge!(:dealer, @anuril)
+    @table.give_badge!(:small_blind, @betlind)
+    @table.give_badge!(:big_blind, @cryle)
     expect(@table.badges).to eq({
       dealer: @anuril,
       small_blind: @betlind,
@@ -81,20 +81,20 @@ RSpec.describe Table do
   end
 
   it "passes badges left" do
-    @table.give_badge(:dealer, @anuril)
+    @table.give_badge!(:dealer, @anuril)
     @table.pass_next!(:dealer)
     expect(@table.player(:dealer)).to be @betlind
   end
 
   it "passes badges right" do
-    @table.give_badge(:dealer, @anuril)
+    @table.give_badge!(:dealer, @anuril)
     @table.pass_previous!(:dealer)
     expect(@table.player(:dealer)).to be @cryle
   end
 
   context "#clockwise_from" do
     before do
-      @table.give_badge(:dealer, @betlind)
+      @table.give_badge!(:dealer, @betlind)
     end
 
     [:dealer, "Betlind"].each do |name|
@@ -118,7 +118,7 @@ RSpec.describe Table do
   
   context "#counterclockwise_from" do
     before do
-      @table.give_badge(:dealer, @betlind)
+      @table.give_badge!(:dealer, @betlind)
     end
 
     [:dealer, "Betlind"].each do |name|

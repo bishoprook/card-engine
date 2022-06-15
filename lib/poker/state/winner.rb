@@ -5,6 +5,8 @@ BaseState = State
 module Poker
   module State
     class Winner < BaseState
+      attr_reader :winner
+      
       def initialize(game, winner)
         super(game)
         @winner = winner
