@@ -53,19 +53,34 @@ RSpec.describe Poker::Hand do
 
   it "recognizes three of a kind" do
     # 7D 7H 7S 5C JH QD KC
-    hand = Poker::Hand.new(Card.all.values_at(18, 31, 44, 3, 35, 23, 50))
+    hand = Poker::Hand.new(Card.all.values_at(18, 31, 44, 3, 35, 23, 50).shuffle)
     expect(hand.type).to eq :three_of_a_kind
     expect(hand.score).to eq 4
-    expect(hand.tie_breakers).to eq [Rank::KING, Rank::QUEEN]
+    expect(hand.tie_breakers).to eq [Rank::SEVEN, Rank::KING, Rank::QUEEN]
   end
 
   it "recognizes two pair" do
+    # JD JH 7C 7S 2H 4D KS
+    hand = Poker::Hand.new(Card.all.values_at(22, 35, 5, 44, 26, 15, 50).shuffle)
+    expect(hand.type).to eq :two_pair
+    expect(hand.score).to eq 3
+    expect(hand.tie_breakers).to eq [Rank::JACK, Rank::SEVEN, Rank::KING]
   end
 
   it "recognizes a pair" do
+    # 9C 9H 2H 5D 7S JD QD
+    hand = Poker::Hand.new(Card.all.values_at(7, 33, 26, 16, 44, 22, 23).shuffle)
+    expect(hand.type).to eq :pair
+    expect(hand.score).to eq 2
+    expect(hand.tie_breakers).to eq [Rank::NINE, Rank::QUEEN, Rank::JACK, Rank::SEVEN]
   end
 
   it "recognizes high card" do
+    # 4H 5D 8C 9S JD KH AC
+    hand = Poker::Hand.new(Card.all.values_at(28, 16, 6, 46, 22, 37, 12).shuffle)
+    expect(hand.type).to eq :high_card
+    expect(hand.score).to eq 1
+    expect(hand.tie_breakers).to eq [Rank::ACE, Rank::KING, Rank::JACK, Rank::NINE, Rank::EIGHT]
   end
 
 end

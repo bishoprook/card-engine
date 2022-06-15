@@ -27,6 +27,7 @@ module Poker
         :check_straight!,
         :check_three_of_a_kind!,
         :check_two_pair!,
+        :check_pair!,
         :check_high_card!
       ].each do |check|
         self.send(check)
@@ -53,7 +54,7 @@ module Poker
 
       @type = :pair
       @score = 2
-      @tie_breakers = high_cards.reverse
+      @tie_breakers = [pair_rank] + high_cards.reverse
     end
 
     def check_two_pair!
@@ -69,7 +70,7 @@ module Poker
 
       @type = :two_pair
       @score = 3
-      @tie_breakers = [kicker]
+      @tie_breakers = [high_pair_rank] + [low_pair_rank] + [kicker]
     end
 
     def check_three_of_a_kind!
@@ -83,7 +84,7 @@ module Poker
 
       @type = :three_of_a_kind
       @score = 4
-      @tie_breakers = high_cards.reverse
+      @tie_breakers = [three_of_a_kind_rank] + high_cards.reverse
     end
 
     def check_straight!
