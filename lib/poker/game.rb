@@ -9,9 +9,7 @@ module Poker
     def initialize(players)
       @table = Table.new(players)
       @table.give_badge(:dealer, players[0])
-      @table.give_badge(:small_blind, players[1])
-      @table.give_badge(:big_blind, players[2])
-      @state = State::BlindBidding.new(self)
+      @state = State::NewHand.new(self)
     end
 
     def successor!

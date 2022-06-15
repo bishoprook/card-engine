@@ -35,6 +35,15 @@ module Poker
       end
     end
 
+    def <=>(other)
+      by_score = self.score <=> other.score
+      return by_score unless by_score == 0
+      self.tie_breakers.zip(other.tie_breakers)
+        .map { |a, b| a.value_aces_high <=> b.value_aces_high }
+        .reject(&:zero?)
+        .first || 0
+    end
+
     private
 
     def check_high_card!
