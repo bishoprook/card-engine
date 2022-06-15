@@ -1,361 +1,200 @@
 require 'poker/state/bidding'
 require 'poker/state/winner'
-require 'poker/player'
-require 'poker/pot'
 require 'poker/game'
-require 'position'
-require 'state'
-require 'table'
-
-class InitialState < State
-  def initialize(game)
-    super(game)
-  end
-end
+require 'poker/player'
 
 RSpec.describe Poker::State::Bidding do
-  let(:anuril) { Poker::Player.new("Anuril", Position.new(0, 5), anuril_money) }
-  let(:betlind) { Poker::Player.new("Betlind", Position.new(1, 5), betlind_money) }
-  let(:cryle) { Poker::Player.new("Cryle", Position.new(2, 5), cryle_money) }
-  let(:dantia) { Poker::Player.new("Dantia", Position.new(3, 5), dantia_money) }
-  let(:etasia) { Poker::Player.new("Etasia", Position.new(4, 5), etasia_money) }
 
-  let(:players) { [anuril, betlind, cryle, dantia, etasia] }
-  let(:game) { Poker::Game.new(players) }
-  let(:pot) { Poker::Pot.new(players, 0, 0) }
+  def self.let_players(symbols)
+    let(:players) { symbols.map { |s| send(s) } }
+    symbols.each_with_index do |symbol, idx|
+      money_symbol = "#{symbol}_money".to_sym
+      status_symbol = "#{symbol}_status".to_sym
 
-  before do
+      let(money_symbol) { 500 }
+      let(status_symbol) { :playing }
+      let(symbol) do
+        money = send(money_symbol)
+        status = send(status_symbol)
+        player = Poker::Player.new(symbol.to_s, Position.new(idx, symbols.length), money)
+        player.status = status
+        player
+      end
+    end
+  end
+
+  let_players(%i{anuril betlind cryle dantia etasia})
+
+  let(:bidder) { anuril }
+  let(:last_bidder) { etasia }
+
+  let(:game) do
+    game = Poker::Game.new(players)
+    game.pot = Poker::Pot.new(players.filter(&:playing?), 0, 0)
     game.table.give_badge!(:bidder, bidder)
     game.table.give_badge!(:last_bidder, last_bidder)
-    game.pot = pot
+    game
   end
 
   let(:initial_state) { Poker::State::Bidding.new(game, :terminal_state) }
   let(:state) { initial_state }
 
-  context "when everyone has 500 and Anuril is bidding" do
-    let(:anuril_money) { 500 }
-    let(:betlind_money) { 500 }
-    let(:cryle_money) { 500 }
-    let(:dantia_money) { 500 }
-    let(:etasia_money) { 500 }
-  
-    let(:bidder) { anuril }
-    let(:last_bidder) { etasia }
+  it "allows Anuril to check" do
+    expect(state.can_check?).to be true
+  end
 
-    it "allows him to check" do
-      expect(state.can_check?).to be true
+  context "when Anuril checks" do
+    let!(:next_state) { state.check!.successor! }
+
+    it "still has a pot bid of 0" do
+      expect(game.pot.bid).to eq 0
     end
 
-    context "when he checks" do
-      let!(:next_state) { state.check!.successor! }
-
-      it "still has a pot bid of 0" do
-        expect(game.pot.bid).to eq 0
-      end
-
-      it "is still bidding" do
-        expect(next_state.is_a?(Poker::State::Bidding)).to be true
-      end
-
-      it "moves the bid to Betlind" do
-        expect(next_state.bidder).to be betlind
-      end
+    it "is still bidding" do
+      expect(next_state.is_a?(Poker::State::Bidding)).to be true
     end
 
-    it "does not allow him to call" do
-      expect(state.can_call?).to be false
-      expect(state.cannot_call_reason)
-        .to eq "There is no bid to call"
+    it "moves the bid to Betlind" do
+      expect(next_state.bidder).to be betlind
+    end
+  end
+
+  it "does not allow Anuril to call" do
+    expect(state.can_call?).to be false
+    expect(state.cannot_call_reason)
+      .to eq "There is no bid to call"
+  end
+
+  it "allows Anuril to raise 200" do
+    expect(state.can_raise?(200)).to be true
+  end
+
+  context "when Anuril raises 200" do
+    let!(:next_state) { state.raise!(200).successor! }
+
+    it "has a pot bid of 200" do
+      expect(game.pot.bid).to eq 200
     end
 
-    it "allows him to raise 200" do
-      expect(state.can_raise?(200)).to be true
+    it "reduces his money" do
+      expect(anuril.money).to eq 300
     end
 
-    context "when he raises 200" do
-      let!(:next_state) { state.raise!(200).successor! }
+    it "increases his bid" do
+      expect(anuril.bid).to eq 200
+    end
 
-      it "has a pot bid of 200" do
+    it "is still bidding" do
+      expect(next_state.is_a?(Poker::State::Bidding)).to be true
+    end
+
+    it "moves the bid to Betlind" do
+      expect(next_state.bidder).to be betlind
+    end
+  end
+
+  it "allows Anuril to go all in" do
+    expect(state.can_all_in?).to be true
+  end
+
+  context "when Anuril goes all in" do
+    let!(:next_state) { state.all_in!.successor! }
+
+    it "has a pot bid of 500" do
+      expect(game.pot.bid).to eq 500
+    end
+
+    it "marks him as all_in" do
+      expect(anuril.all_in?).to be true
+    end
+
+    it "reduces his money" do
+      expect(anuril.money).to eq 0
+    end
+
+    it "increases his bid" do
+      expect(anuril.bid).to eq 500
+    end
+
+    it "is still bidding" do
+      expect(next_state.is_a?(Poker::State::Bidding)).to be true
+    end
+
+    it "moves the bid to Betlind" do
+      expect(next_state.bidder).to be betlind
+    end
+  end
+
+  it "allows Anuril to fold" do
+    expect(state.can_fold?).to be true
+  end
+
+  context "when Anuril folds" do
+    let!(:next_state) { state.fold!.successor! }
+
+    it "still has a pot bid of 0" do
+      expect(game.pot.bid).to eq 0
+    end
+
+    it "marks him as folded" do
+      expect(anuril.folded?).to be true
+    end
+
+    it "is still bidding" do
+      expect(next_state.is_a?(Poker::State::Bidding)).to be true
+    end
+
+    it "moves the bid to Betlind" do
+      expect(next_state.bidder).to be betlind
+    end
+  end
+
+  it "does not allow Anuril to raise to 500" do
+    expect(state.can_raise?(500)).to be false
+    expect(state.cannot_raise_reason(500))
+      .to eq "Have exactly 500, requires going all in"
+  end
+
+  it "does not allow Anuril to raise to 1000" do
+    expect(state.can_raise?(1000)).to be false
+    expect(state.cannot_raise_reason(1000))
+      .to eq "Need more than 1000 to raise to 1000, have 500"
+  end
+
+  context "after Anuril checks and Betlind raises 200" do
+    let!(:state) { initial_state.check!.successor!.raise!(200).successor! }
+
+    it "is Cryle's bid" do
+      expect(state.bidder).to be cryle
+    end
+
+    it "has a current bid of 200" do
+      expect(game.pot.bid).to eq 200
+    end
+
+    it "does not allow her to check" do
+      expect(state.can_check?).to be false
+      expect(state.cannot_check_reason).to eq "Need to bid at least 200 to stay in"
+    end
+
+    it "allows her to call" do
+      expect(state.can_call?).to be true
+    end
+
+    context "when she calls" do
+      let!(:next_state) { state.call!.successor! }
+
+      it "still has a pot bid of 200" do
         expect(game.pot.bid).to eq 200
       end
 
-      it "reduces his money" do
-        expect(anuril.money).to eq 300
+      it "decreases her money" do
+        expect(cryle.money).to eq 300
       end
 
-      it "increases his bid" do
-        expect(anuril.bid).to eq 200
+      it "increases her bid" do
+        expect(cryle.bid).to eq 200
       end
-
-      it "is still bidding" do
-        expect(next_state.is_a?(Poker::State::Bidding)).to be true
-      end
-
-      it "moves the bid to Betlind" do
-        expect(next_state.bidder).to be betlind
-      end
-    end
-
-    it "allows him to go all in" do
-      expect(state.can_all_in?).to be true
-    end
-
-    context "when he goes all in" do
-      let!(:next_state) { state.all_in!.successor! }
-
-      it "has a pot bid of 500" do
-        expect(game.pot.bid).to eq 500
-      end
-
-      it "marks him as all_in" do
-        expect(anuril.all_in?).to be true
-      end
-
-      it "reduces his money" do
-        expect(anuril.money).to eq 0
-      end
-
-      it "increases his bid" do
-        expect(anuril.bid).to eq 500
-      end
-
-      it "is still bidding" do
-        expect(next_state.is_a?(Poker::State::Bidding)).to be true
-      end
-
-      it "moves the bid to Betlind" do
-        expect(next_state.bidder).to be betlind
-      end
-    end
-
-    it "allows him to fold" do
-      expect(state.can_fold?).to be true
-    end
-
-    context "when he folds" do
-      let!(:next_state) { state.fold!.successor! }
-
-      it "still has a pot bid of 0" do
-        expect(game.pot.bid).to eq 0
-      end
-
-      it "marks him as folded" do
-        expect(anuril.folded?).to be true
-      end
-
-      it "is still bidding" do
-        expect(next_state.is_a?(Poker::State::Bidding)).to be true
-      end
-
-      it "moves the bid to Betlind" do
-        expect(next_state.bidder).to be betlind
-      end
-    end
-
-    it "does not allow him to raise to 500" do
-      expect(state.can_raise?(500)).to be false
-      expect(state.cannot_raise_reason(500))
-        .to eq "Have exactly 500, requires going all in"
-    end
-
-    it "does not allow him to raise to 1000" do
-      expect(state.can_raise?(1000)).to be false
-      expect(state.cannot_raise_reason(1000))
-        .to eq "Need more than 1000 to raise to 1000, have 500"
-    end
-
-    context "after Anuril checks and Betlind raises 200" do
-      let!(:state) { initial_state.check!.successor!.raise!(200).successor! }
-
-      it "is Cryle's bid" do
-        expect(state.bidder).to be cryle
-      end
-
-      it "has a current bid of 200" do
-        expect(game.pot.bid).to eq 200
-      end
-
-      it "does not allow her to check" do
-        expect(state.can_check?).to be false
-        expect(state.cannot_check_reason).to eq "Need to bid at least 200 to stay in"
-      end
-
-      it "allows her to call" do
-        expect(state.can_call?).to be true
-      end
-
-      context "when she calls" do
-        let!(:next_state) { state.call!.successor! }
-
-        it "still has a pot bid of 200" do
-          expect(game.pot.bid).to eq 200
-        end
-
-        it "decreases her money" do
-          expect(cryle.money).to eq 300
-        end
-
-        it "increases her bid" do
-          expect(cryle.bid).to eq 200
-        end
-
-        it "is still bidding" do
-          expect(next_state.is_a?(Poker::State::Bidding)).to be true
-        end
-  
-        it "moves the bid to Dantia" do
-          expect(next_state.bidder).to be dantia
-        end
-      end
-
-      it "allows her to raise to 300" do
-        expect(state.can_raise?(300)).to be true
-      end
-
-      context "when she raises to 300" do
-        let!(:next_state) { state.raise!(300).successor! }
-
-        it "has a pot bid of 300" do
-          expect(game.pot.bid).to eq 300
-        end
-
-        it "decreases her money" do
-          expect(cryle.money).to eq 200
-        end
-
-        it "increases her bid" do
-          expect(cryle.bid).to eq 300
-        end
-
-        it "is still bidding" do
-          expect(next_state.is_a?(Poker::State::Bidding)).to be true
-        end
-  
-        it "moves the bid to Dantia" do
-          expect(next_state.bidder).to be dantia
-        end
-
-        it "sets the last bidder to Betlind" do
-          expect(game.table.player(:last_bidder)).to be betlind
-        end
-      end
-
-      it "does not allow her to raise to 100" do
-        expect(state.can_raise?(100)).to be false
-        expect(state.cannot_raise_reason(100))
-          .to eq "Must set a new bid higher than 200"
-      end
-
-      it "allows her to go all in" do
-        expect(state.can_all_in?).to be true
-      end
-
-      context "when she goes all in as a raise" do
-        let!(:next_state) { state.all_in!.successor! }
-
-        it "marks her as all in" do
-          expect(cryle.all_in?).to be true
-        end
-
-        it "decreases her money" do
-          expect(cryle.money).to eq 0
-        end
-
-        it "increases her bid" do
-          expect(cryle.bid).to eq 500
-        end
-
-        it "increases the pot bid" do
-          expect(game.pot.bid).to eq 500
-        end
-
-        it "is still bidding" do
-          expect(next_state.is_a?(Poker::State::Bidding)).to be true
-        end
-  
-        it "moves the bid to Dantia" do
-          expect(next_state.bidder).to be dantia
-        end
-
-        it "sets the last bidder to Betlind" do
-          expect(game.table.player(:last_bidder)).to be betlind
-        end
-      end
-
-      context "when Cryle has 200 left" do
-        # Just validating that she cannot call and must go all in when she has
-        # exactly enough money to call. Otherwise this is just a special case
-        # of going all in when not having enough to call.
-
-        let(:cryle_money) { 200 }
-
-        it "does not allow her to call" do
-          expect(state.can_call?).to be false
-          expect(state.cannot_call_reason)
-            .to eq "Need 200 to call, have 200, must go all in or fold"
-        end
-      end
-
-      context "when Cryle has 150 left" do
-        let(:cryle_money) { 150 }
-
-        it "does not allow her to call" do
-          expect(state.can_call?).to be false
-          expect(state.cannot_call_reason)
-            .to eq "Need 200 to call, have 150, must go all in or fold"
-        end
-
-        context "when she goes all in" do
-          let!(:next_state) { state.all_in!.successor! }
-
-          it "marks her as all_in" do
-            expect(cryle.all_in?).to be true
-          end
-
-          it "reduces her money" do
-            expect(cryle.money).to eq 0
-          end
-
-          it "increases her bid" do
-            expect(cryle.bid).to eq 150
-          end
-
-          it "still has a pot bid of 200" do
-            expect(game.pot.bid).to eq 200
-          end
-
-          it "is still bidding" do
-            expect(next_state.is_a?(Poker::State::Bidding)).to be true
-          end
-    
-          it "moves the bid to Dantia" do
-            expect(next_state.bidder).to be dantia
-          end
-  
-          it "keeps the last bidder at Anuril" do
-            expect(game.table.player(:last_bidder)).to be anuril
-          end
-        end
-      end
-    end
-
-    context "when Anuril is the last bidder and he checks" do
-      let (:last_bidder) { anuril }
-      let! (:next_state) { state.check!.successor! }
-
-      it "proceeds to the given next state" do
-        expect(next_state).to eq :terminal_state
-      end
-    end
-
-    context "when Betlind has already folded, Cryle is all in, and Anuril checks" do
-      before do
-        betlind.status = :folded
-        cryle.status = :all_in
-      end
-
-      let!(:next_state) { state.check!.successor! }
 
       it "is still bidding" do
         expect(next_state.is_a?(Poker::State::Bidding)).to be true
@@ -366,47 +205,195 @@ RSpec.describe Poker::State::Bidding do
       end
     end
 
-    context "when Betlind, Cryle, and Dantia have already folded and Anuril folds" do
-      before do
-        betlind.status = :folded
-        cryle.status = :folded
-        dantia.status = :folded
+    it "allows her to raise to 300" do
+      expect(state.can_raise?(300)).to be true
+    end
+
+    context "when she raises to 300" do
+      let!(:next_state) { state.raise!(300).successor! }
+
+      it "has a pot bid of 300" do
+        expect(game.pot.bid).to eq 300
       end
 
-      let!(:next_state) { state.fold!.successor! }
+      it "decreases her money" do
+        expect(cryle.money).to eq 200
+      end
 
-      it "is a win for Etasia" do
-        expect(next_state.is_a?(Poker::State::Winner)).to be true
-        expect(next_state.winner).to be etasia
+      it "increases her bid" do
+        expect(cryle.bid).to eq 300
+      end
+
+      it "is still bidding" do
+        expect(next_state.is_a?(Poker::State::Bidding)).to be true
+      end
+
+      it "moves the bid to Dantia" do
+        expect(next_state.bidder).to be dantia
+      end
+
+      it "sets the last bidder to Betlind" do
+        expect(game.table.player(:last_bidder)).to be betlind
       end
     end
 
-    context "when Betlind and Cryle folded, Dantia is all in, and Anuril folds" do
-      before do
-        betlind.status = :folded
-        cryle.status = :folded
-        dantia.status = :all_in
+    it "does not allow her to raise to 100" do
+      expect(state.can_raise?(100)).to be false
+      expect(state.cannot_raise_reason(100))
+        .to eq "Must set a new bid higher than 200"
+    end
+
+    it "allows her to go all in" do
+      expect(state.can_all_in?).to be true
+    end
+
+    context "when she goes all in as a raise" do
+      let!(:next_state) { state.all_in!.successor! }
+
+      it "marks her as all in" do
+        expect(cryle.all_in?).to be true
       end
 
-      let!(:next_state) { state.fold!.successor! }
+      it "decreases her money" do
+        expect(cryle.money).to eq 0
+      end
 
-      it "skips the rest of bidding and goes to the next state" do
-        expect(next_state).to eq :terminal_state
+      it "increases her bid" do
+        expect(cryle.bid).to eq 500
+      end
+
+      it "increases the pot bid" do
+        expect(game.pot.bid).to eq 500
+      end
+
+      it "is still bidding" do
+        expect(next_state.is_a?(Poker::State::Bidding)).to be true
+      end
+
+      it "moves the bid to Dantia" do
+        expect(next_state.bidder).to be dantia
+      end
+
+      it "sets the last bidder to Betlind" do
+        expect(game.table.player(:last_bidder)).to be betlind
       end
     end
 
-    context "when Anuril is last bidder, Dantia is all in, Etasia folded, and Anuril raises" do
-      before do
-        dantia.status = :all_in
-        etasia.status = :folded
+    context "when Cryle has 200 left" do
+      # Just validating that she cannot call and must go all in when she has
+      # exactly enough money to call. Otherwise this is just a special case
+      # of going all in when not having enough to call.
+
+      let(:cryle_money) { 200 }
+
+      it "does not allow her to call" do
+        expect(state.can_call?).to be false
+        expect(state.cannot_call_reason)
+          .to eq "Need 200 to call, have 200, must go all in or fold"
+      end
+    end
+
+    context "when Cryle has 150 left" do
+      let(:cryle_money) { 150 }
+
+      it "does not allow her to call" do
+        expect(state.can_call?).to be false
+        expect(state.cannot_call_reason)
+          .to eq "Need 200 to call, have 150, must go all in or fold"
       end
 
-      let(:last_bidder) { anuril }
-      let!(:next_state) { state.raise!(200).successor! }
+      context "when she goes all in" do
+        let!(:next_state) { state.all_in!.successor! }
 
-      it "sets Cryle to be the last bidder" do
-        expect(game.table.player(:last_bidder)).to be cryle
+        it "marks her as all_in" do
+          expect(cryle.all_in?).to be true
+        end
+
+        it "reduces her money" do
+          expect(cryle.money).to eq 0
+        end
+
+        it "increases her bid" do
+          expect(cryle.bid).to eq 150
+        end
+
+        it "still has a pot bid of 200" do
+          expect(game.pot.bid).to eq 200
+        end
+
+        it "is still bidding" do
+          expect(next_state.is_a?(Poker::State::Bidding)).to be true
+        end
+  
+        it "moves the bid to Dantia" do
+          expect(next_state.bidder).to be dantia
+        end
+
+        it "keeps the last bidder at Anuril" do
+          expect(game.table.player(:last_bidder)).to be anuril
+        end
       end
+    end
+  end
+
+  context "when Anuril is the last bidder and he checks" do
+    let (:last_bidder) { anuril }
+    let! (:next_state) { state.check!.successor! }
+
+    it "proceeds to the given next state" do
+      expect(next_state).to eq :terminal_state
+    end
+  end
+
+  context "when Betlind has already folded, Cryle is all in, and Anuril checks" do
+    let(:betlind_status) { :folded }
+    let(:cryle_status) { :all_in }
+
+    let!(:next_state) { state.check!.successor! }
+
+    it "is still bidding" do
+      expect(next_state.is_a?(Poker::State::Bidding)).to be true
+    end
+
+    it "moves the bid to Dantia" do
+      expect(next_state.bidder).to be dantia
+    end
+  end
+
+  context "when Betlind, Cryle, and Dantia have already folded and Anuril folds" do
+    let(:betlind_status) { :folded }
+    let(:cryle_status) { :folded }
+    let(:dantia_status) { :folded }
+
+    let!(:next_state) { state.fold!.successor! }
+
+    it "is a win for Etasia" do
+      expect(next_state.is_a?(Poker::State::Winner)).to be true
+      expect(next_state.winner).to be etasia
+    end
+  end
+
+  context "when Betlind and Cryle folded, Dantia is all in, and Anuril folds" do
+    let(:betlind_status) { :folded }
+    let(:cryle_status) { :folded }
+    let(:dantia_status) { :all_in }
+
+    let!(:next_state) { state.fold!.successor! }
+
+    it "skips the rest of bidding and goes to the next state" do
+      expect(next_state).to eq :terminal_state
+    end
+  end
+
+  context "when Anuril is last bidder, Dantia is all in, Etasia folded, and Anuril raises" do
+    let(:dantia_status) { :all_in }
+    let(:etasia_status) { :folded }
+    let(:last_bidder) { anuril }
+
+    let!(:next_state) { state.raise!(200).successor! }
+
+    it "sets Cryle to be the last bidder" do
+      expect(game.table.player(:last_bidder)).to be cryle
     end
   end
 end
