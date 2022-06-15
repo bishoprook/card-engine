@@ -1,5 +1,5 @@
 class Table
-  def initialize(*players)
+  def initialize(players)
     @players = players
     @badges = {}
   end
@@ -8,7 +8,7 @@ class Table
     @badges.dup.freeze
   end
 
-  def give_badge(title, player)
+  def give_badge!(title, player)
     @badges[title] = player
   end
 
@@ -41,14 +41,14 @@ class Table
     end
   end
 
-  def pass_next!(title)
+  def pass_next!(title, &block)
     raise "Badge #{title} not found" unless @badges.key?(title)
-    @badges[title] = next_from(title)
+    @badges[title] = next_from(title, &block)
   end
 
-  def pass_previous!(title)
+  def pass_previous!(title, &block)
     raise "Badge #{title} not found" unless @badges.key?(title)
-    @badges[title] = previous_from(title)
+    @badges[title] = previous_from(title, &block)
   end
 
   def clockwise_from(target, count = nil)

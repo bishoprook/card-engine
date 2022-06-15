@@ -21,8 +21,8 @@ module Poker
         game.shared_cards.concat(game.deck.slice!(0..num_cards))
 
         game.pot.bid = 0
-        game.table.give_badge(:first_bidder, game.table.next_from(:dealer, &:playing?))
-        game.table.give_badge(:last_bidder, game.table.previous_from(:first_bidder, &:playing?))
+        game.table.give_badge!(:first_bidder, game.table.next_from(:dealer, &:playing?))
+        game.table.give_badge!(:last_bidder, game.table.previous_from(:first_bidder, &:playing?))
 
         case round
         when :flop:

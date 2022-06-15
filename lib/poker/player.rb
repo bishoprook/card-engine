@@ -4,8 +4,8 @@ BasePlayer = Player
 
 module Poker
   class Player < BasePlayer
-    attr_reader :money, :bid
-    attr_accessor :hole_cards, :status, :hand
+    attr_reader :money
+    attr_accessor :bid, :hole_cards, :status, :hand
 
     def initialize(name, position, money)
       super(name, position)
@@ -32,15 +32,11 @@ module Poker
     end
 
     def gain_money!(amount)
-      money += amount
+      @money += amount
     end
 
     def lose_money!(amount)
-      money -= amount
-    end
-
-    def increase_bid(amount)
-      bid += amount
+      @money -= amount
     end
   end
 end
