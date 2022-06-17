@@ -10,12 +10,11 @@ module Poker::State
         player.bid = 0
         player.status = player.money == 0 ? :busted : :playing
       end
+      game.round = :pre_flop
       game.pot = Pot.new(game.players.filter(&:should_receive_cards?))
 
       game.table.give_badge!(:small_blind, game.table.next_from(:dealer))
       game.table.give_badge!(:big_blind, game.table.next_from(:small_blind))
-      game.table.give_badge!(:first_bidder, game.table.next_from(:big_blind))
-      game.table.give_badge!(:last_bidder, game.player_with_badge(:big_blind))
 
       BlindAnte.new(game, :small_blind, 250,
         BlindAnte.new(game, :big_blind, 500,

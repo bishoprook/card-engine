@@ -1,7 +1,11 @@
 require 'poker/state/bidding'
+require 'poker/state/revealing'
+require 'poker/state/Showdown'
 require 'poker/state/winner'
 require 'poker/game'
 require 'poker/player'
+require 'poker/pot'
+require 'position'
 
 RSpec.describe Poker::State::Bidding do
 
@@ -28,15 +32,18 @@ RSpec.describe Poker::State::Bidding do
   let(:bidder) { anuril }
   let(:last_bidder) { etasia }
 
+  let(:game_round) { :flop }
+
   let(:game) do
-    game = Poker::Game.new(players)
+    game = Poker::Game.new(players, [250, 500])
+    game.round = game_round
     game.pot = Poker::Pot.new(players.filter(&:playing?), 0, 0)
     game.table.give_badge!(:bidder, bidder)
     game.table.give_badge!(:last_bidder, last_bidder)
     game
   end
 
-  let(:initial_state) { Poker::State::Bidding.new(game, :terminal_state) }
+  let(:initial_state) { Poker::State::Bidding.new(game) }
   let(:state) { initial_state }
 
   it "allows Anuril to check" do
@@ -337,11 +344,42 @@ RSpec.describe Poker::State::Bidding do
   end
 
   context "when Anuril is the last bidder and he checks" do
-    let (:last_bidder) { anuril }
-    let! (:next_state) { state.check!.successor! }
+    let(:last_bidder) { anuril }
+    let!(:next_state) { state.check!.successor! }
 
-    it "proceeds to the given next state" do
-      expect(next_state).to eq :terminal_state
+    context "when round is pre-flop" do
+      let(:game_round) { :pre_flop }
+
+      it "goes to the flop" do
+        expect(next_state.is_a?(Poker::State::Revealing)).to be true
+        expect(next_state.round).to eq :flop
+      end
+    end
+
+    context "when round is flop" do
+      let(:game_round) { :flop }
+
+      it "goes to the turn" do
+        expect(next_state.is_a?(Poker::State::Revealing)).to be true
+        expect(next_state.round).to eq :turn
+      end
+    end
+
+    context "when round is turn" do
+      let(:game_round) { :turn }
+
+      it "goes to the river" do
+        expect(next_state.is_a?(Poker::State::Revealing)).to be true
+        expect(next_state.round).to eq :river
+      end
+    end
+
+    context "when round is river" do
+      let(:game_round) { :river }
+
+      it "goes to showdown" do
+        expect(next_state.is_a?(Poker::State::Showdown)).to be true
+      end
     end
   end
 
@@ -381,7 +419,7 @@ RSpec.describe Poker::State::Bidding do
     let!(:next_state) { state.fold!.successor! }
 
     it "skips the rest of bidding and goes to the next state" do
-      expect(next_state).to eq :terminal_state
+      expect(next_state.is_a?(Poker::State::Revealing)).to be true
     end
   end
 
