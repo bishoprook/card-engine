@@ -145,7 +145,7 @@ module Poker::State
       return self unless satisfied?
 
       players_in = game.players.reject(&:folded?).reject(&:busted?)
-      players_bidding = game.players.filter(&:playing?)
+      players_bidding = game.players.select(&:playing?)
 
       case
       when players_in.length == 1

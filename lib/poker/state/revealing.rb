@@ -21,7 +21,7 @@ module Poker::State
 
       game.shared_cards.concat(game.deck.slice!(0..num_cards))
 
-      if game.players.filter(&:playing?).length == 1
+      if game.players.select(&:playing?).length == 1
         case @round
         when :flop then Revealing.new(game, :turn)
         when :turn then Revealing.new(game, :river)

@@ -28,7 +28,7 @@ class Table
     if block.nil?
       next_player
     else
-      clockwise_from(next_player, @players.length - 1).filter(&block).first
+      clockwise_from(next_player, @players.length - 1).select(&block).first
     end
   end
 
@@ -37,7 +37,7 @@ class Table
     if block.nil?
       previous_player
     else
-      counterclockwise_from(previous_player, @players.length - 1).filter(&block).first
+      counterclockwise_from(previous_player, @players.length - 1).select(&block).first
     end
   end
 

@@ -37,7 +37,7 @@ RSpec.describe Poker::State::Bidding do
   let(:game) do
     game = Poker::Game.new(players, [250, 500])
     game.round = game_round
-    game.pot = Poker::Pot.new(players.filter(&:playing?), 0, 0)
+    game.pot = Poker::Pot.new(players.select(&:playing?), 0, 0)
     game.table.give_badge!(:bidder, bidder)
     game.table.give_badge!(:last_bidder, last_bidder)
     game
