@@ -1,30 +1,33 @@
-require "state"
 require "card"
-
-BaseState = State
+require "poker/state/bidding"
+require "poker/state/dealing"
 
 module Poker::State
-  class BlindAnte < BaseState
+  class BlindAnte
+    attr_reader :game, :title
+
     def initialize(game, title)
-      super(game)
+      @game = game
       @title = title
     end
 
     def successor!
-      player = game.table.badge(@title)
-      required_bid = case @title
+      player = game.table.player(title)
+
+      required_bid = case title
       when :small_blind then game.blinds[0]
       when :big_blind then game.blinds[1]
       end
 
-      # TODO: Actually take input from a player
-      # TODO: if the player doesn't have the required bid, forced all-in
-      player.bid = required_bid
-      player.lose_money!(required_bid)
-      game.pot.incr!(required_bid)
-      game.pot.bid = required_bid
+      game.table.give_badge!(:bidder, player)
+      bidding = Bidding.new(game)
+      if player.money <= required_bid
+        bidding.all_in!
+      else
+        bidding.raise!(required_bid)
+      end
 
-      case @title
+      case title
       when :small_blind then BlindAnte.new(game, :big_blind)
       when :big_blind then Dealing.new(game)
       end

@@ -1,20 +1,18 @@
-require "state"
-
-BaseState = State
+require "poker/state/bidding"
 
 module Poker::State
-  class Revealing < BaseState
-    attr_reader :round
+  class Revealing
+    attr_reader :game, :round
 
     def initialize(game, round)
-      super(game)
+      @game = game
       @round = round
     end
 
     def successor!
-      game.round = @round
+      game.round = round
 
-      num_cards = case @round
+      num_cards = case round
       when :flop then 3
       when [:turn, :river] then 1
       end
@@ -22,7 +20,7 @@ module Poker::State
       game.shared_cards.concat(game.deck.slice!(0..num_cards))
 
       if game.players.select(&:playing?).length == 1
-        case @round
+        case round
         when :flop then Revealing.new(game, :turn)
         when :turn then Revealing.new(game, :river)
         when :river then Showdown.new(game)

@@ -1,14 +1,18 @@
-require "state"
-
-BaseState = State
+require "poker/state/bidding"
 
 module Poker::State
-  class Dealing < BaseState
+  class Dealing
+    attr_reader :game
+
+    def initialize(game)
+      @game = game
+    end
+
     def successor!
       game.deck = Card.all.shuffle
 
-      @game.table.players.reject(&:busted?).each do |player|
-        player.hole_cards = @game.deck.slice!(0..1)
+      game.table.players.reject(&:busted?).each do |player|
+        player.hole_cards = game.deck.slice!(0..1)
       end
 
       game.table.give_badge!(:first_bidder, game.table.next_from(:big_blind))

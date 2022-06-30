@@ -1,11 +1,11 @@
-require "state"
-
-BaseState = State
+require "poker/state/winner"
 
 module Poker::State
-  class Bidding < BaseState
+  class Bidding
+    attr_reader :game, :satisfied
+
     def initialize(game)
-      super(game)
+      @game = game
       @satisfied = false
     end
 

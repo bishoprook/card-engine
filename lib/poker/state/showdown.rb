@@ -1,15 +1,26 @@
-require "state"
 require "poker/hand"
-
-BaseState = State
+require "poker/state/winner"
 
 module Poker::State
-  class Showdown < BaseState
+  class Showdown
+    attr_reader :game
+
+    def initialize(game)
+      @game = game
+    end
+
+    def eligible_players
+      game.players.reject(&:folded?).reject(&:busted?)
+    end
+
     def successor!
       game.players.each do |player|
         player.hand = Poker::best_hand(player.hole_cards + game.shared_cards)
       end
       sorted_players = game.players.sort { |a, b| a.hand <=> b.hand }
+      # TODO: side pots
+      # TODO: ties
+      Winner.new(game, sorted_players.last)
     end
   end
 end

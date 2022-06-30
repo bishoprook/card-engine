@@ -1,10 +1,15 @@
-require "state"
 require "card"
-
-BaseState = State
+require "poker/state/blind_ante"
+require "poker/state/dealing"
 
 module Poker::State
-  class NewHand < BaseState
+  class NewHand
+    attr_reader :game
+
+    def initialize(game)
+      @game = game
+    end
+
     def successor!
       game.players.each do |player|
         player.bid = 0

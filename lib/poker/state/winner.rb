@@ -1,18 +1,16 @@
-require "state"
-
-BaseState = State
+require "poker/state/new_hand"
 
 module Poker::State
-  class Winner < BaseState
-    attr_reader :winner
+  class Winner
+    attr_reader :game, :winner
     
     def initialize(game, winner)
-      super(game)
+      @game = game
       @winner = winner
     end
 
     def successor!
-      @winner.gain_money!(game.pot.total_money)
+      winner.gain_money!(game.pot.total_money)
 
       game.players.each do |player|
         player.status = player.money == 0 ? :busted : :playing
