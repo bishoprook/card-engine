@@ -2,25 +2,39 @@ require "poker/state/new_hand"
 
 module Poker::State
   class Winner
-    attr_reader :game, :winner
+    attr_reader :game, :winners, :pot_number
     
-    def initialize(game, winner)
+    def initialize(game, winners, pot_number = 0)
       @game = game
-      @winner = winner
+      @winners = winners
+      @pot_number = pot_number
+    end
+
+    def bid_cap
+      @bid_cap ||= winners.map(&:bid).min
+    end
+
+    def pot_amount
+      @pot_amount ||= game.players.map(&:bid).map { |amt| [amt, bid_cap].min }.sum
     end
 
     def successor!
-      winner.gain_money!(game.pot.total_money)
+      winners.first.gain_money!(pot_amount)
 
       game.players.each do |player|
-        player.status = player.money == 0 ? :busted : :playing
+        if player.bid > bid_cap
+          player.bid -= bid_cap
+        else
+          player.bid = 0
+        end
       end
 
-      if game.players.reject(&:busted?).length == 1
-        GameOver.new(game)
-      else
+      side_pot_winners = winners.select { |player| player.bid > 0 }
+      if side_pot_winners.empty?
         game.table.pass_next!(:dealer)
         NewHand.new(game)
+      else
+        Winner.new(game, side_pot_winners, pot_number + 1)
       end
     end
   end

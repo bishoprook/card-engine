@@ -1,4 +1,5 @@
 require "poker/state/bidding"
+module Poker; end
 
 module Poker::State
   class Dealing

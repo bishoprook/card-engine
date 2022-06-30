@@ -14,13 +14,12 @@ module Poker::State
     end
 
     def successor!
-      game.players.each do |player|
+      eligible_players.each do |player|
         player.hand = Poker::best_hand(player.hole_cards + game.shared_cards)
       end
       sorted_players = game.players.sort { |a, b| a.hand <=> b.hand }
-      # TODO: side pots
       # TODO: ties
-      Winner.new(game, sorted_players.last)
+      Winner.new(game, sorted_players.reverse)
     end
   end
 end

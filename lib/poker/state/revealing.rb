@@ -26,7 +26,6 @@ module Poker::State
         when :river then Showdown.new(game)
         end
       else
-        game.pot.bid = 0
         game.table.give_badge!(:first_bidder, game.table.next_from(:dealer, &:playing?))
         game.table.give_badge!(:last_bidder, game.table.previous_from(:first_bidder, &:playing?))
         Bidding.new(game)
