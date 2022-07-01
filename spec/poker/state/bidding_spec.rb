@@ -4,25 +4,17 @@ require 'poker/state/showdown'
 require 'poker/state/winner'
 require 'poker/game'
 
-require_relative 'spec_helper'
+require_relative '../spec_helper'
 
 RSpec.describe Poker::State::Bidding do
-  include SpecHelper
+
+  let_game()
+  let(:game_round) { :flop }
 
   let_players(%i{anuril betlind cryle dantia etasia})
 
   let(:bidder) { anuril }
   let(:last_bidder) { etasia }
-
-  let(:game_round) { :flop }
-
-  let(:game) do
-    game = Poker::Game.new(players, [250, 500])
-    game.round = game_round
-    game.table.give_badge!(:bidder, bidder)
-    game.table.give_badge!(:last_bidder, last_bidder)
-    game
-  end
 
   let(:initial_state) { Poker::State::Bidding.new(game) }
   let(:state) { initial_state }

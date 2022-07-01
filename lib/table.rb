@@ -8,6 +8,10 @@ class Table
     @badges.dup.freeze
   end
 
+  def badge?(title)
+    @badges.key?(title)
+  end
+
   def give_badge!(title, player)
     @badges[title] = player
   end
@@ -16,7 +20,7 @@ class Table
     if target.is_a?(Player)
       raise "#{target.name} is not at table" unless @players.include?(target)
       target
-    elsif @badges.key?(target)
+    elsif badge?(target)
       @badges[target]
     else
       @players.find { |p| p.name == target }

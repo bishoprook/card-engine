@@ -10,31 +10,28 @@ module Poker::State
       @pot_number = pot_number
     end
 
-    def bid_cap
-      @bid_cap ||= winners.map(&:bid).min
-    end
-
-    def pot_amount
-      @pot_amount ||= game.players.map(&:bid).map { |amt| [amt, bid_cap].min }.sum
-    end
-
     def successor!
-      winners.first.gain_money!(pot_amount)
+      # If any of the winners went all in, they can only take as much from each other player
+      # as their own bid. The rest of the winnings go to a side pot excluding them.
+      pot_cap = winners.map(&:bid).min
+      pot_amount = game.players.map(&:bid).map { |bid| [bid, pot_cap].min }.sum
 
+      # If there are multiple winners, they share the winnings.
+      # TODO: rounding problems
+      split_amount = pot_amount / winners.length
+      winners.each { |winner| winner.gain_money!(split_amount) }
+
+      # Reduce each bid by how much was thrown into this pot. Any player whose bid drops to
+      # zero here (e.g. they won by going all-in) will become ineligible for the next
+      # showdown.
       game.players.each do |player|
-        if player.bid > bid_cap
-          player.bid -= bid_cap
-        else
-          player.bid = 0
-        end
+        player.bid -= [pot_cap, player.bid].min
       end
 
-      side_pot_winners = winners.select { |player| player.bid > 0 }
-      if side_pot_winners.empty?
-        game.table.pass_next!(:dealer)
-        NewHand.new(game)
+      if game.players.any? { |player| player.bid > 0 }
+        Showdown.new(game, pot_number + 1)
       else
-        Winner.new(game, side_pot_winners, pot_number + 1)
+        NewHand.new(game)
       end
     end
   end

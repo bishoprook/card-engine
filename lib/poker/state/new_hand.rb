@@ -11,6 +11,12 @@ module Poker::State
     end
 
     def successor!
+      if game.table.badge?(:dealer)
+        game.table.pass_next!(:dealer)
+      else
+        game.table.give_badge!(:dealer, game.players.first)
+      end
+      
       game.players.each do |player|
         player.bid = 0
         player.status = player.money == 0 ? :busted : :playing

@@ -3,20 +3,7 @@ require 'rank'
 require 'suit'
 require 'poker/hand'
 
-
-$LOOKUP = Card.all.group_by { |c| c.suit.short_name }.transform_values do |suited_cards|
-  suited_cards.group_by { |c| c.rank.short_name }.transform_values(&:first)
-end
-
-# Generates a test hand: hand_of(%w{10C AH 2S 5D QC})
-def hand_of(card_short_names)
-  cards = card_short_names.map do |short_name|
-    if short_name =~ /^([2-9]|10|[JQKA])([CDHS])$/
-      $LOOKUP[$2][$1]
-    end
-  end
-  Poker::Hand.new(cards.shuffle)
-end
+require_relative 'spec_helper'
 
 RSpec.describe Poker::Hand do
   it "recognizes a royal flush" do
@@ -98,6 +85,13 @@ RSpec.describe Poker::Hand do
     unsorted = [flush, two_pair_five_kicker, pair, two_pair_ace_kicker]
     sorted = [pair, two_pair_five_kicker, two_pair_ace_kicker, flush]
     expect(unsorted.sort).to eq sorted
+  end
+
+  it "recognizes a tie" do
+    a = hand_of(%w{5C 5H 2D 2S QH})
+    b = hand_of(%w{5S 5D 2H 2C QD})
+    expect(a <=> b).to eq 0
+    expect(b <=> a).to eq 0
   end
 
 end

@@ -1,24 +1,18 @@
 require 'poker/game'
 require 'poker/state/blind_ante'
 
-require_relative 'spec_helper'
+require_relative '../spec_helper'
 
 RSpec.describe Poker::State::BlindAnte do
-  include SpecHelper
 
-  let_players(%i{anuril betlind cryle dantia etasia})
-
+  let_game()
   let(:small_blind_amount) { 50 }
   let(:big_blind_amount) { 100 }
 
-  let(:game) do
-    game = Poker::Game.new(players, [small_blind_amount, big_blind_amount])
-    game.round = :pre_flop
-    game.table.give_badge!(:dealer, anuril)
-    game.table.give_badge!(:small_blind, betlind)
-    game.table.give_badge!(:big_blind, cryle)
-    game
-  end
+  let_players(%i{anuril betlind cryle dantia etasia})
+  let(:dealer) { anuril }
+  let(:small_blind) { betlind }
+  let(:big_blind) { cryle }
 
   let(:state) { Poker::State::BlindAnte.new(game, :small_blind) }
 

@@ -31,6 +31,10 @@ module Poker
       @status == :busted
     end
 
+    def zero_bid?
+      @bid == 0
+    end
+
     def gain_money!(amount)
       @money += amount
     end
