@@ -11,7 +11,7 @@ module Poker::State
     end
 
     def successor!
-      eligible_players = game.players.reject(&:folded?).reject(&:busted?).reject(&:zero_bid?)
+      eligible_players = game.table.players.reject(&:folded?).reject(&:busted?).reject(&:zero_bid?)
       eligible_players.each do |player|
         player.hand = Poker::Hand.new(player.hole_cards + game.shared_cards)
       end

@@ -14,7 +14,7 @@ module Poker::State
       # If any of the winners went all in, they can only take as much from each other player
       # as their own bid. The rest of the winnings go to a side pot excluding them.
       pot_cap = winners.map(&:bid).min
-      pot_amount = game.players.map(&:bid).map { |bid| [bid, pot_cap].min }.sum
+      pot_amount = game.table.players.map(&:bid).map { |bid| [bid, pot_cap].min }.sum
 
       # If there are multiple winners, they share the winnings.
       # TODO: rounding problems
@@ -23,12 +23,15 @@ module Poker::State
 
       # Reduce each bid by how much was thrown into this pot. Any player whose bid drops to
       # zero here (e.g. they won by going all-in) will become ineligible for the next
-      # showdown.
-      game.players.each do |player|
+      # showdown. If they have no money left at all, they are busted.
+      game.table.players.each do |player|
         player.bid -= [pot_cap, player.bid].min
+        if player.bid == 0 && player.money == 0
+          player.status = :busted
+        end
       end
 
-      if game.players.any? { |player| player.bid > 0 }
+      if game.table.players.any? { |player| player.bid > 0 }
         Showdown.new(game, pot_number + 1)
       else
         NewHand.new(game)

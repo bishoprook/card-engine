@@ -1,4 +1,10 @@
+require "event_emitter"
+
 class Table
+  include EventEmitter
+
+  attr_reader :players
+
   def initialize(players)
     @players = players
     @badges = {}
@@ -14,6 +20,7 @@ class Table
 
   def give_badge!(title, player)
     @badges[title] = player
+    announce(:badge_given, [title, player.name])
   end
 
   def player(target)
@@ -48,11 +55,13 @@ class Table
   def pass_next!(title, &block)
     raise "Badge #{title} not found" unless @badges.key?(title)
     @badges[title] = next_from(title, &block)
+    announce(:badge_given, [title, @badges[title].name])
   end
 
   def pass_previous!(title, &block)
     raise "Badge #{title} not found" unless @badges.key?(title)
     @badges[title] = previous_from(title, &block)
+    announce(:badge_given, [title, @badges[title].name])
   end
 
   def clockwise_from(target, count = nil)

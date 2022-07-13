@@ -13,8 +13,12 @@ module Poker::State
       game.table.player(:bidder)
     end
 
+    def current_bid
+      game.table.players.map(&:bid).max
+    end
+
     def call_amount
-      game.bid - bidder.bid
+      current_bid - bidder.bid
     end
 
     def can_all_in?
@@ -31,13 +35,15 @@ module Poker::State
       bidder.status = :all_in
       all_in_bid = bidder.money + bidder.bid
 
-      if all_in_bid > game.bid
-        # Everyone else gets a new chance to respond if this was a raise.
+      if all_in_bid > current_bid
+        # Since this was a raise, everyone else gets a chance to respond.
         game.table.give_badge!(:last_bidder, game.table.previous_from(bidder, &:playing?))
       end
 
       bidder.lose_money!(bidder.money)
       bidder.bid = all_in_bid
+
+      game.announce(:all_in, [bidder.name, all_in_bid])
 
       @satisfied = true
       self
@@ -50,8 +56,8 @@ module Poker::State
     def cannot_raise_reason(new_bid)
       added_amount = new_bid - bidder.bid
       case
-      when new_bid <= game.bid
-        "Must set a new bid higher than #{game.bid}"
+      when new_bid <= current_bid
+        "Must set a new bid higher than #{current_bid}"
       when bidder.money == added_amount
         "Have exactly #{bidder.money}, requires going all in"
       when bidder.money < added_amount
@@ -68,6 +74,9 @@ module Poker::State
       bidder.bid = new_bid
       # Everyone else gets a new chance to respond.
       game.table.give_badge!(:last_bidder, game.table.previous_from(bidder, &:playing?))
+
+      game.announce(:raise, [bidder.name, new_bid])
+
       @satisfied = true
       self
     end
@@ -90,7 +99,10 @@ module Poker::State
     def call!
       return self unless can_call?
       bidder.lose_money!(call_amount)
-      bidder.bid = game.bid
+      bidder.bid = current_bid
+
+      game.announce(:call, [bidder.name])
+
       @satisfied = true
       self
     end
@@ -110,6 +122,9 @@ module Poker::State
 
     def check!
       return self unless can_check?
+
+      game.announce(:check, [bidder.name])
+
       @satisfied = true
       self
     end
@@ -125,6 +140,9 @@ module Poker::State
     def fold!
       return self unless can_fold?
       bidder.status = :folded
+
+      game.announce(:fold, [bidder.name])
+
       @satisfied = true
       self
     end
@@ -136,11 +154,12 @@ module Poker::State
     def successor!
       return self unless satisfied?
 
-      players_in = game.players.reject(&:folded?).reject(&:busted?)
-      players_bidding = game.players.select(&:playing?)
+      players_in = game.table.players.reject(&:folded?).reject(&:busted?)
+      players_bidding = game.table.players.select(&:playing?)
 
       case
       when players_in.length == 1
+        game.announce(:winner_last_standing, [players_in.first.name])
         Winner.new(game, [players_in.first])
       when game.table.player(:last_bidder) == bidder || players_bidding.length == 1
         case game.round

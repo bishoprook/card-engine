@@ -6,7 +6,12 @@ require 'poker/player'
 
 module PlayerHelper
   def let_players(symbols)
-    let(:players) { symbols.map { |s| send(s) } }
+    attr_reader :players
+
+    before do
+      @players = symbols.map { |s| send(s) }
+    end
+    
     symbols.each_with_index do |symbol, idx|
       money_symbol = "#{symbol}_money".to_sym
       bid_symbol = "#{symbol}_bid".to_sym
@@ -31,20 +36,33 @@ end
 
 module GameHelper
   def let_game
-    let(:game) do
-      game = Poker::Game.new(players, [small_blind_amount, big_blind_amount])
-      game.round = game_round
-      game.shared_cards = shared_cards
-      game.table.give_badge!(:dealer, dealer) unless dealer.nil?
-      game.table.give_badge!(:small_blind, small_blind) unless small_blind.nil?
-      game.table.give_badge!(:big_blind, big_blind) unless big_blind.nil?
-      game.table.give_badge!(:bidder, bidder) unless bidder.nil?
-      game.table.give_badge!(:last_bidder, last_bidder) unless last_bidder.nil?
-      game
+    attr_reader :game, :game_events, :table, :table_events
+
+    before do
+      @table = Table.new(players)
+      @game = Poker::Game.new(table, [small_blind_amount, big_blind_amount], buy_in_amount)
+      @game.round = game_round
+      @game.shared_cards = shared_cards
+      @table.give_badge!(:dealer, dealer) unless dealer.nil?
+      @table.give_badge!(:small_blind, small_blind) unless small_blind.nil?
+      @table.give_badge!(:big_blind, big_blind) unless big_blind.nil?
+      @table.give_badge!(:bidder, bidder) unless bidder.nil?
+      @table.give_badge!(:last_bidder, last_bidder) unless last_bidder.nil?
+      
+      @game_events = []
+      @game.subscribe do |event, data|
+        @game_events << [event, data]
+      end
+
+      @table_events = []
+      @table.subscribe do |event, data|
+        @table_events << [event, data]
+      end
     end
 
     let(:small_blind_amount) { nil }
     let(:big_blind_amount) { nil }
+    let(:buy_in_amount) { nil }
     let(:game_round) { nil }
     let(:shared_cards) { nil }
     let(:dealer) { nil }

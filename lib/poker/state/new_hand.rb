@@ -11,20 +11,14 @@ module Poker::State
     end
 
     def successor!
-      if game.table.badge?(:dealer)
-        game.table.pass_next!(:dealer)
-      else
-        game.table.give_badge!(:dealer, game.players.first)
-      end
-      
-      game.players.each do |player|
-        player.bid = 0
-        player.status = player.money == 0 ? :busted : :playing
-      end
+      game.table.players.reject(&:busted?).each { |player| player.status = :playing }
       game.round = :pre_flop
 
-      game.table.give_badge!(:small_blind, game.table.next_from(:dealer))
-      game.table.give_badge!(:big_blind, game.table.next_from(:small_blind))
+      game.table.pass_next!(:dealer, &:playing?)
+      game.announce(:new_dealer, game.table.player(:dealer).name)
+
+      game.table.give_badge!(:small_blind, game.table.next_from(:dealer, &:playing?))
+      game.table.give_badge!(:big_blind, game.table.next_from(:small_blind, &:playing?))
 
       BlindAnte.new(game, :small_blind)
     end

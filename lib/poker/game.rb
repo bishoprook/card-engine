@@ -1,19 +1,18 @@
-require "table"
 require "card"
+require "event_emitter"
+require "table"
 
 module Poker
   class Game
-    attr_reader :players, :table, :blinds
+    include EventEmitter
+
+    attr_reader :table, :blinds, :buy_in
     attr_accessor :round, :state, :deck, :shared_cards
 
-    def initialize(players, blinds)
-      @table = Table.new(players)
-      @players = players
+    def initialize(table, blinds, buy_in)
+      @table = table
       @blinds = blinds
-    end
-
-    def bid
-      players.reject(&:folded?).reject(&:busted?).map(&:bid).max
+      @buy_in = buy_in
     end
   end
 end

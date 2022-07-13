@@ -8,6 +8,8 @@ RSpec.describe Table do
     @betlind = Player.new("Betlind", Position.new(1, 3))
     @cryle = Player.new("Cryle", Position.new(2, 3))
     @table = Table.new([@anuril, @betlind, @cryle])
+    @events = []
+    @table.subscribe { |event, data| @events << [event, data] }
   end
 
   context "#next_from" do
@@ -59,6 +61,7 @@ RSpec.describe Table do
   it "stores and retrieves a badge position" do
     @table.give_badge!(:dealer, @anuril)
     expect(@table.player(:dealer)).to be @anuril
+    expect(@events).to include [:badge_given, [:dealer, "Anuril"]]
   end
 
   it "retrieves multiple badges" do
@@ -70,6 +73,9 @@ RSpec.describe Table do
       small_blind: @betlind,
       big_blind: @cryle
     })
+    expect(@events).to include [:badge_given, [:dealer, "Anuril"]]
+    expect(@events).to include [:badge_given, [:small_blind, "Betlind"]]
+    expect(@events).to include [:badge_given, [:big_blind, "Cryle"]]
   end
 
   it "retrieves by player name" do
@@ -84,12 +90,14 @@ RSpec.describe Table do
     @table.give_badge!(:dealer, @anuril)
     @table.pass_next!(:dealer)
     expect(@table.player(:dealer)).to be @betlind
+    expect(@events).to include [:badge_given, [:dealer, "Betlind"]]
   end
 
   it "passes badges right" do
     @table.give_badge!(:dealer, @anuril)
     @table.pass_previous!(:dealer)
     expect(@table.player(:dealer)).to be @cryle
+    expect(@events).to include [:badge_given, [:dealer, "Cryle"]]
   end
 
   context "#clockwise_from" do

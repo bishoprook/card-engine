@@ -6,10 +6,10 @@ require_relative '../spec_helper'
 
 RSpec.describe Poker::State::Showdown do
 
-  let_game()
-  let(:game_round) { :showdown }
-
   let_players(%i{anuril betlind cryle dantia etasia})
+  let_game()
+
+  let(:game_round) { :showdown }
 
   let(:initial_state) { Poker::State::Showdown.new(game) }
   let!(:state) { initial_state }

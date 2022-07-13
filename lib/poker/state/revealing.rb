@@ -17,9 +17,13 @@ module Poker::State
       when [:turn, :river] then 1
       end
 
-      game.shared_cards.concat(game.deck.slice!(0..num_cards))
+      new_cards = game.deck.slice!(0..num_cards)
+      game.announce(:revealing, [round, new_cards])
+      
+      game.shared_cards.concat(new_cards)
 
-      if game.players.select(&:playing?).length == 1
+      if game.table.players.select(&:playing?).length == 1
+        game.announce(:skipping_bids, [])
         case round
         when :flop then Revealing.new(game, :turn)
         when :turn then Revealing.new(game, :river)
@@ -28,6 +32,7 @@ module Poker::State
       else
         game.table.give_badge!(:first_bidder, game.table.next_from(:dealer, &:playing?))
         game.table.give_badge!(:last_bidder, game.table.previous_from(:first_bidder, &:playing?))
+        game.announce(:bidding, [game.table.player(:first_bidder).name])
         Bidding.new(game)
       end
     end

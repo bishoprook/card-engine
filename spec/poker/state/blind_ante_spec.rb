@@ -5,11 +5,12 @@ require_relative '../spec_helper'
 
 RSpec.describe Poker::State::BlindAnte do
 
+  let_players(%i{anuril betlind cryle dantia etasia})
   let_game()
+
   let(:small_blind_amount) { 50 }
   let(:big_blind_amount) { 100 }
 
-  let_players(%i{anuril betlind cryle dantia etasia})
   let(:dealer) { anuril }
   let(:small_blind) { betlind }
   let(:big_blind) { cryle }
@@ -20,7 +21,6 @@ RSpec.describe Poker::State::BlindAnte do
     let!(:next_state) { state.successor! }
 
     it "forces a bid from the small blind" do
-      expect(game.bid).to eq small_blind_amount
       expect(betlind.bid).to eq small_blind_amount
       expect(betlind.money).to eq (betlind_money - small_blind_amount)
     end
@@ -42,7 +42,6 @@ RSpec.describe Poker::State::BlindAnte do
       let(:betlind_money) { 10 }
 
       it "forces them all in at that amount" do
-        expect(game.bid).to eq betlind_money
         expect(betlind.bid).to eq betlind_money
         expect(betlind.money).to eq 0
         expect(betlind.all_in?).to be true
@@ -54,7 +53,6 @@ RSpec.describe Poker::State::BlindAnte do
     let!(:next_state) { state.successor!.successor! }
 
     it "forces a bid from the big blind" do
-      expect(game.bid).to eq big_blind_amount
       expect(cryle.bid).to eq big_blind_amount
       expect(cryle.money).to eq (cryle_money - big_blind_amount)
     end
@@ -75,7 +73,6 @@ RSpec.describe Poker::State::BlindAnte do
       let(:cryle_money) { 10 }
 
       it "forces them all in at that amount" do
-        expect(game.bid).to eq [cryle_money, small_blind_amount].max
         expect(cryle.bid).to eq cryle_money
         expect(cryle.money).to eq 0
         expect(cryle.all_in?).to be true

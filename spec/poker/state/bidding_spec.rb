@@ -8,10 +8,10 @@ require_relative '../spec_helper'
 
 RSpec.describe Poker::State::Bidding do
 
-  let_game()
-  let(:game_round) { :flop }
-
   let_players(%i{anuril betlind cryle dantia etasia})
+  let_game()
+  
+  let(:game_round) { :flop }
 
   let(:bidder) { anuril }
   let(:last_bidder) { etasia }
@@ -27,7 +27,7 @@ RSpec.describe Poker::State::Bidding do
     let!(:next_state) { state.check!.successor! }
 
     it "still has a pot bid of 0" do
-      expect(game.bid).to eq 0
+      expect(next_state.current_bid).to eq 0
     end
 
     it "is still bidding" do
@@ -53,7 +53,7 @@ RSpec.describe Poker::State::Bidding do
     let!(:next_state) { state.raise!(200).successor! }
 
     it "has a pot bid of 200" do
-      expect(game.bid).to eq 200
+      expect(next_state.current_bid).to eq 200
     end
 
     it "reduces his money" do
@@ -81,7 +81,7 @@ RSpec.describe Poker::State::Bidding do
     let!(:next_state) { state.all_in!.successor! }
 
     it "has a pot bid of 500" do
-      expect(game.bid).to eq 500
+      expect(next_state.current_bid).to eq 500
     end
 
     it "marks him as all_in" do
@@ -113,7 +113,7 @@ RSpec.describe Poker::State::Bidding do
     let!(:next_state) { state.fold!.successor! }
 
     it "still has a pot bid of 0" do
-      expect(game.bid).to eq 0
+      expect(next_state.current_bid).to eq 0
     end
 
     it "marks him as folded" do
@@ -149,7 +149,7 @@ RSpec.describe Poker::State::Bidding do
     end
 
     it "has a current bid of 200" do
-      expect(game.bid).to eq 200
+      expect(state.current_bid).to eq 200
     end
 
     it "does not allow her to check" do
@@ -165,7 +165,7 @@ RSpec.describe Poker::State::Bidding do
       let!(:next_state) { state.call!.successor! }
 
       it "still has a pot bid of 200" do
-        expect(game.bid).to eq 200
+        expect(next_state.current_bid).to eq 200
       end
 
       it "decreases her money" do
@@ -193,7 +193,7 @@ RSpec.describe Poker::State::Bidding do
       let!(:next_state) { state.raise!(300).successor! }
 
       it "has a pot bid of 300" do
-        expect(game.bid).to eq 300
+        expect(next_state.current_bid).to eq 300
       end
 
       it "decreases her money" do
@@ -213,7 +213,7 @@ RSpec.describe Poker::State::Bidding do
       end
 
       it "sets the last bidder to Betlind" do
-        expect(game.table.player(:last_bidder)).to be betlind
+        expect(table.player(:last_bidder)).to be betlind
       end
     end
 
@@ -243,7 +243,7 @@ RSpec.describe Poker::State::Bidding do
       end
 
       it "increases the pot bid" do
-        expect(game.bid).to eq 500
+        expect(next_state.current_bid).to eq 500
       end
 
       it "is still bidding" do
@@ -255,7 +255,7 @@ RSpec.describe Poker::State::Bidding do
       end
 
       it "sets the last bidder to Betlind" do
-        expect(game.table.player(:last_bidder)).to be betlind
+        expect(table.player(:last_bidder)).to be betlind
       end
     end
 
@@ -298,7 +298,7 @@ RSpec.describe Poker::State::Bidding do
         end
 
         it "still has a pot bid of 200" do
-          expect(game.bid).to eq 200
+          expect(next_state.current_bid).to eq 200
         end
 
         it "is still bidding" do
@@ -310,7 +310,7 @@ RSpec.describe Poker::State::Bidding do
         end
 
         it "keeps the last bidder at Anuril" do
-          expect(game.table.player(:last_bidder)).to be anuril
+          expect(table.player(:last_bidder)).to be anuril
         end
       end
     end
@@ -404,7 +404,7 @@ RSpec.describe Poker::State::Bidding do
     let!(:next_state) { state.raise!(200).successor! }
 
     it "sets Cryle to be the last bidder" do
-      expect(game.table.player(:last_bidder)).to be cryle
+      expect(table.player(:last_bidder)).to be cryle
     end
   end
 end
